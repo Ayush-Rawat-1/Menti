@@ -2,7 +2,9 @@ import { apiClient } from './client'
 import type { AuthResponse } from '../types'
 
 export const loginWithGoogle = (credential: string) =>
-  apiClient.post<AuthResponse>('/auth/google', { credential }).then((r) => r.data)
+  apiClient
+    .post<AuthResponse>('/auth/google', { credential }, { withCredentials: true }) // <-- ADDED THIS
+    .then((r) => r.data)
 
 export const refreshToken = () =>
   apiClient

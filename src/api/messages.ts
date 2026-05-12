@@ -2,7 +2,9 @@ import { apiClient, getAccessToken, API_BASE } from './client'
 import type { Message, SSEToken } from '../types'
 
 export const getMessages = (threadId: string) =>
-  apiClient.get<Message[]>(`/threads/${threadId}/messages`).then((r) => r.data)
+  apiClient
+    .get<{ thread_id: string; messages: Message[] }>(`/threads/${threadId}/messages`)
+    .then((r) => r.data.messages)
 
 /**
  * Stream a message via SSE.
@@ -31,7 +33,8 @@ export function streamMessage(
           'Content-Type': 'application/json',
           Authorization: `Bearer ${getAccessToken()}`,
         },
-        body: JSON.stringify({ content }),
+        // Change from { content } to { message: content }
+        body: JSON.stringify({ message: content }),
         signal: controller.signal,
       })
 

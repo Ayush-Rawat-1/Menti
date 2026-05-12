@@ -19,7 +19,7 @@ export default function Sidebar() {
             <path d="M12 16.5C12 14.015 14.015 12 16.5 12S21 14.015 21 16.5 18.985 21 16.5 21 12 18.985 12 16.5z" fill="white"/>
           </svg>
         </div>
-        <span className="font-serif text-stone-850 text-lg font-medium">Mindful</span>
+        <span className="font-serif text-stone-850 text-lg font-medium">MindEase</span>
       </div>
 
       {/* New chat button */}

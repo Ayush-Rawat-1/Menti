@@ -3,7 +3,15 @@ import { useChatStore } from '../../store/chatStore'
 import MessageBubble from './MessageBubble'
 
 export default function MessageList() {
-  const { activeThreadId, messages, streamingContent, isStreaming, isLoadingMessages } = useChatStore()
+  const { 
+    activeThreadId, 
+    messages, 
+    streamingContent, 
+    isStreaming, 
+    isLoadingMessages,
+    streamingThreadId // <-- Destructure the new state
+  } = useChatStore()
+  
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const threadMessages = activeThreadId ? (messages[activeThreadId] ?? []) : []
@@ -33,16 +41,16 @@ export default function MessageList() {
         <MessageBubble key={i} message={msg} />
       ))}
 
-      {/* Streaming assistant message */}
-      {isStreaming && streamingContent && (
+      {/* Streaming assistant message - only show if THIS thread is the one streaming */}
+      {isStreaming && streamingContent && activeThreadId === streamingThreadId && (
         <MessageBubble
           message={{ role: 'assistant', content: streamingContent }}
           isStreaming
         />
       )}
 
-      {/* Typing indicator before first token */}
-      {isStreaming && !streamingContent && (
+      {/* Typing indicator before first token - only show if THIS thread is the one streaming */}
+      {isStreaming && !streamingContent && activeThreadId === streamingThreadId && (
         <div className="flex items-end gap-3">
           <div className="flex-shrink-0 w-8 h-8 rounded-full bg-forest-600 flex items-center justify-center">
             <svg width="14" height="14" viewBox="0 0 32 32" fill="none">
