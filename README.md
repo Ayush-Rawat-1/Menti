@@ -1,86 +1,154 @@
-# MindEase 🌿
+# MindEase 🌿 - Frontend Architecture
 
-A memory-augmented, AI-powered mental wellness companion. MindEase provides a calm, secure space to reflect, process emotions, and find clarity using advanced Generative AI. 
+This document outlines the frontend structure and critical UI/UX design patterns implemented in the MindEase React application.
 
-## ✨ Features
+---
 
-* **Conversational Memory:** Powered by LangGraph, the AI remembers past context across multiple conversation threads to provide deeply personalized and continuous support.
-* **Real-Time Streaming:** Responses are streamed token-by-token via Server-Sent Events (SSE) for a fluid, natural conversational experience.
-* **Strict Safety Guardrails:** The LLM implementation includes robust response guardrails explicitly designed to prioritize user safety and prevent any suggestions of self-harm.
-* **Secure Authentication:** Implements Google OAuth 2.0 with a secure, HttpOnly cookie-based refresh token rotation system.
-* **Smart Thread Management:** Conversations are lazy-initialized to prevent empty "ghost" threads, automatically reordered by recent activity, and timestamped.
-* **Beautiful UI/UX:** A calming, fully responsive interface built with React, Tailwind CSS, and custom animations.
+# 📁 Project Structure
 
-## 🛠 Tech Stack
+The frontend is built with React 18, TypeScript, and Vite, structured to separate global state, API communication, and presentation components.
 
-### Frontend
-* **Framework:** React 18 with TypeScript
-* **Build Tool:** Vite
-* **Styling:** Tailwind CSS
-* **State Management:** Zustand
-* **Authentication:** `@react-oauth/google`
-* **Network:** Axios & native Fetch (for SSE streams)
+```text
+src/
+├── api/                # Network communication layer
+│   ├── auth.ts         # Google OAuth and refresh token rotation logic
+│   ├── client.ts       # Axios instance with interceptors for auth headers
+│   ├── messages.ts     # SSE (Server-Sent Events) fetch wrapper for real-time streaming
+│   └── threads.ts      # Thread CRUD operations
+│
+├── components/         # Presentation and UI logic
+│   ├── auth/           # Login screen and Google OAuth wrapper
+│   │   ├── LoginPage    
+│   ├── chat/           # Core messaging interface
+│   │   ├── ChatArea
+│   │   ├── MessageList
+│   │   ├── Input
+│   │   └── Bubbles
+│   │
+│   └── sidebar/        # Navigation, thread history, and user profile display
+│   │   ├── Sidebar
+│   │   ├── ThreadItem
+│
+├── store/              # Zustand global state management
+│   ├── authStore.ts    # Session state, login, and silent refresh logic
+│   └── chatStore.ts    # Thread tracking, message caching, and streaming state
+│
+├── types/              # Global TypeScript interfaces
+│   └── index.ts        # Definitions for Thread, Message, User, and SSE tokens
+│
+├── App.tsx             # Root component handling auth routing and layout
+├── index.css           # Tailwind directives and custom CSS animations
+└── main.tsx            # Application entry point
+```
 
-### Backend
-* **Framework:** FastAPI (Python)
-* **AI/LLM:** LangGraph & LangChain
-* **Database:** PostgreSQL (with async asyncpg/SQLAlchemy)
-* **Authentication:** JWT (JSON Web Tokens) with secure HttpOnly cookies
+---
 
-## 🚀 Getting Started
+# ✨ Critical UI/UX Implementations
 
-### Prerequisites
-* Node.js (v18+ recommended)
-* Python (3.10+ recommended)
-* PostgreSQL database
-* Google Cloud Console account (for OAuth Client ID)
+MindEase is designed as a mental wellness tool, meaning the UI must feel calm, responsive, and completely seamless. The following critical patterns enforce this experience.
 
-### 1. Clone the repository
-git clone https://github.com/yourusername/mindease.git
-cd mindease
+---
 
-### 2. Backend Setup
-Navigate to the backend directory and set up your Python environment:
+## 1. Lazy Thread Initialization (Zero Ghost Threads)
 
-cd Menti-backend
+To keep the database and sidebar clean, clicking **"New Conversation"** does **not** instantly trigger an API call.
 
-# Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows use: venv\Scripts\activate
+Instead:
 
-# Install dependencies
-pip install -r requirements.txt
+- The frontend temporarily clears the `activeThreadId`
+- A fresh empty chat window is rendered immediately
+- The actual `createThread` backend request is deferred until the user sends their first message
 
-# Set up environment variables
-cp .env.example .env
+This prevents the creation of empty or abandoned conversations ("ghost threads") in the database.
 
-*Edit the backend `.env` file with your database URL, JWT secrets, and Google Client ID.*
+---
 
-Run the FastAPI development server:
-fastapi dev main.py
+## 2. Optimistic Reordering & Timestamping
 
-### 3. Frontend Setup
-Navigate to the frontend directory:
+When a user sends a message in an older thread, that thread should instantly move to the top of the **Recents** list.
 
-cd ../Menti-frontend
+### Frontend Behavior
 
-# Install dependencies
-npm install
+- The thread is optimistically removed from its current position
+- It is immediately inserted at index `0`
+- A temporary `Date.now()` timestamp is assigned for instant UI responsiveness
 
-# Set up environment variables
-cp .env.example .env
+### Synchronization Step
 
-*Edit the frontend `.env` file:*
-VITE_API_URL=http://localhost:8000
-VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
+After the AI finishes generating its response:
 
-Run the Vite development server:
-npm run dev
+- The frontend silently refetches the actual `updated_at` timestamp from the backend
+- The temporary timestamp is replaced without causing visual jumps or layout flickering
 
-## 🔒 Security & Privacy
-* **Local Development:** The refresh token cookie's `secure` flag is set to `False` for local HTTP development. Ensure this is flipped to `True` in production.
-* **Stateless Auth:** Access tokens are short-lived (15 mins), while refresh tokens are securely rotated in the backend database.
-* **Data Isolation:** All database queries strictly enforce user-level ownership checks before returning thread or message data.
+This creates a smooth, real-time messaging experience.
 
-## ⚠️ Disclaimer
-MindEase is an AI-powered conversational tool designed for reflection and wellness support. It is **not** a replacement for professional medical advice, diagnosis, or therapy.
+---
+
+## 3. Thread-Isolated Streaming State
+
+AI responses are streamed token-by-token using **Server-Sent Events (SSE)**.
+
+Users may switch between conversations while a response is still generating, so streaming state must remain isolated to the originating thread.
+
+### Store Design
+
+The global Zustand store tracks:
+
+```ts
+streamingThreadId
+streamingContent
+```
+
+### Rendering Logic
+
+The UI only renders the streaming typing bubble when:
+
+```ts
+activeThreadId === streamingThreadId
+```
+
+This ensures partially streamed responses never appear inside the wrong conversation.
+
+---
+
+## 4. Therapeutic Visual Design
+
+MindEase intentionally avoids harsh or overstimulating visual styles commonly found in traditional tech interfaces.
+
+### Design Principles
+
+- No pure black dark mode
+- No neon accent colors
+- Soft contrast and calming palettes
+- Rounded, approachable components
+- Subtle motion and low-stress animations
+
+The overall goal is to maintain a grounded, anxiety-free user experience appropriate for a mental wellness platform.
+
+---
+
+# 🛠️ Core Frontend Stack
+
+| Technology | Purpose |
+|---|---|
+| React 18 | UI rendering |
+| TypeScript | Type safety |
+| Vite | Fast development/build tooling |
+| Tailwind CSS | Styling and design system |
+| Zustand | Global state management |
+| Axios | API communication |
+| Server-Sent Events (SSE) | Real-time AI response streaming |
+
+---
+
+# 🌱 Architectural Philosophy
+
+MindEase follows a frontend architecture centered around:
+
+- **Low-friction interaction**
+- **Optimistic UI updates**
+- **Real-time responsiveness**
+- **Thread-safe streaming**
+- **Emotionally calming design**
+
+The application prioritizes emotional comfort and seamless interaction as much as technical performance.
