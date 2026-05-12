@@ -37,13 +37,13 @@ from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, AIM
 from langchain_core.messages.utils import count_tokens_approximately
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, START, END, MessagesState
-from langgraph.graph.state import CompiledGraph
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.store.base import BaseStore
 from langmem.short_term import SummarizationNode, RunningSummary
 from pydantic import BaseModel, Field
 
 from database import get_checkpointer, get_store
-
+from config import settings
 
 # ---------------------------------------------------------------------------
 # 1. State
@@ -133,7 +133,7 @@ class MemoryInsight(BaseModel):
 llm = ChatOpenRouter(
     model="openai/gpt-4o-mini",
     temperature=0.7,
-    api_key=os.getenv("OPENROUTER_API_KEY"),
+    api_key=settings.openrouter_api_key,
 )
 
 # Lower temperature for structured decisions
@@ -516,10 +516,10 @@ def build_graph() -> StateGraph:
 # 6. Compiled graph  (initialized lazily via setup())
 # ---------------------------------------------------------------------------
 
-_app: CompiledGraph | None = None
+_app: CompiledStateGraph | None = None
 
 
-def get_app() -> CompiledGraph:
+def get_app() -> CompiledStateGraph:
     """Return the compiled graph. Raises if setup() has not been called."""
     if _app is None:
         raise RuntimeError("Workflow not initialized — call setup() first.")

@@ -31,7 +31,7 @@ _google_request = google_requests.Request()
 _COOKIE_CONFIG = {
     "key":      "refresh_token",
     "httponly": True,
-    "secure":   True,       # HTTPS only — set False only in local dev
+    "secure":   False,       # HTTPS only — set False only in local dev
     "samesite": "lax",
     "max_age":  settings.refresh_token_expire_days * 24 * 60 * 60,
 }

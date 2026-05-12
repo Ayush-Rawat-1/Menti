@@ -2,10 +2,10 @@
 FastAPI files for Memory-Augmented Therapist.
 
 Development:
-    fastapi dev files/main.py
+    fastapi dev main.py
 
 Production:
-    fastapi run files/main.py --host 0.0.0.0 --port 8000
+    fastapi run main.py --host 0.0.0.0 --port 8000
 """
 from contextlib import asynccontextmanager
 
