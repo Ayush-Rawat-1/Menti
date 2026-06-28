@@ -36,7 +36,7 @@ export default function LoginPage() {
         {/* Heading */}
         <div className="text-center mb-10">
           <h1 className="font-serif text-4xl text-stone-850 mb-3">
-            Welcome to Mindful
+            Welcome to MindEase
           </h1>
           <p className="font-sans text-bark-400 text-lg leading-relaxed">
             A calm space to reflect, process,<br />and find clarity.
